@@ -1,0 +1,2 @@
+# SJava-Compiler-s-Parser
+Version of java language that support simple commands as declaration, initializing and assignment  in condition, method and global scopes. The implementation of scopes is as a forest of scopes (methods are trees in a global scope). The program return 0 if the inputted  java file may be compiled, 1 if invalid (specifying which compile error is encountered) and 2 if file doen't exist.
