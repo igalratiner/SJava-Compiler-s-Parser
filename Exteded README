@@ -1,0 +1,193 @@
+=============================
+=    Program Description    =
+=============================
+
+Version of java language that support simple commands as declaration, initializing and assignment  in condition, method and global scopes. The implementation of scopes is as a forest of scopes (methods are trees in a global scope). The program return 0 if the inputted  java file may be compiled, 1 if invalid (specifying which compile error is encountered) and 2 if file doen't exist.
+
+#notes:
+1. the functions are void only.
+2. each function ends with return.
+3. unreachable code blocks are valid.
+
+Examples of correct input files:
+
+#input file 1 example - correct code, passes compilation:
+
+final char c = 'b';
+
+//comment
+
+void foo() {
+	while(true) {
+		if (false) {
+			doo();
+		}
+	}
+
+	return;
+}
+
+void boo(int a, int b, int c1, String d) {
+	char e = c;
+	return;
+} 
+
+void doo() {
+	return;
+}
+
+
+#input file 2 - not correct, notice that in this example, in the boo function, in the first condition scope
+we declared an integer variable (c) and in an inner condition scope we assigned it without initializing 
+(int d=c) which leads to a compilation error. If we assing variable c with an integer the file will be valid.
+
+// some int member
+final int a = 5;
+
+//Another int member
+final int b = a;
+
+// now - a string member
+String s;
+
+void boo(int a, int b, String s) {
+	if (true) {
+		int c;
+		boo(1,2,"hello");
+		while (false) {
+			int d = c;
+			soo(true);
+		}
+	}
+	return;
+}
+
+void soo(boolean b) {
+	return;
+}
+
+
+
+=============================
+=      File description     =
+=============================
+The file contains following files:
+
+package 'main':
+CodeBlock.java
+CompilerException.java
+ExceedingParenthesesException.java
+
+InvalidLineSyntaxException.java
+NoReturnAtEndOfMethodException.java
+
+Node.java
+ParsingException.java
+Reader.java 
+Sjavac.java
+SyntaxValidator.java 
+
+
+
+package 'parsing':
+ConditionStatementFromGlobalScopeException.java
+CreateGlobalScope.java 
+CreateInnerScope.java
+CreateMethodScope.java
+CreateScope.java
+IdentifierMatcher.java 
+InvalidAssigningToFinalVariableException.java
+InvalidMethodInputException.java
+InvalidParameterTypeException.java
+InvalidTypeAssignmentException.java
+MethodCallFromGlobalScopeException.java
+MethodDeclarationFromInnerScopeException.java 
+MethodToken.java 
+NotExistingInitiatedVariableInputException.java 
+NotExistingMethodException.java
+NotInitiatedFinalVariableException.java 
+RegExp.java
+ReturnStatementFromGlobalScopeException.java 
+Token.java 
+VariableInScopeRedeclarationException.java 
+VariablesRegex.java
+
+
+=============================
+=          Design           =
+=============================
+
+Thinking about how to analyze the text given to me, I noticed that the structure of a given code is similar
+to a structure of a a forest in the way that the global scope and its defined variables and functions, is 
+common to all of the code lines. the next step is noticing that the next level is for the functions defined 
+in the code representing blocks of codes with actions and conditions. those functions can be looked as roots of trees, each function contains condition statements concatenated inside the scope and can be defined recursively 
+as children of the function. as I need to analyze data and I are fimiliar with the structure of the forest I 
+decided to use that structure.
+
+each scope node hold either inner scope node or simple block code node (non-inner scope code lines) - the
+simple code block node hold the scope data for their parents which is written to the scope node hashmap 
+(representing the scope) when parsing take place.
+
+The global scope is not connected in parenthood connection to the method scopes because its unique and 
+therefore might hurt the recursive processes yet it has a special node status, and the methods are held 
+in a list as trees.
+
+Noticing that the code be looked as isolated scopes(sharing attributes with some of the other scopes)
+all scopes shares some attributes such as methods decleared in the scope(in case of global scope) or the
+parent declearded function incase of inside method scopes. therfore I created CreateScope as an abstract
+class for the classes that creates scopes to inherit from - the scopes inheriting the abstract class are 
+singleton because they are responsible to create a scope from lists of codes - therefore there is no need 
+in more than one object. 
+
+Going through lines of code and detect whether the code is logic and can be "compiled" I concluded a class
+that parses the file/text is needed followed by classes that supports the tree structure i.e Node.
+Further more needing to store the variables and the functions with the info they contains:
+for variables whether the parameter is final, declared or having a value and its type(int,double...)
+for functions its name, parameters and its return type(currently only void but can be chenged in the future).
+The data is stored in a Token kind instance containing the mention above fields.
+Given the uniqueness of a parameter name I concluded HashMap data structure is the best way to store
+information about it that I will be able to access easly later.
+
+the exceptions are designed in two groups, while one group inherit from a one exception class and both 
+groups inherit from one general exception class.
+
+I used the Concept of enums and the Singelton idea to repressent unique data of certain kind such as
+variable types and regular expression that I would like to access or iterate through.
+
+=============================
+=  Implementation details   =
+=============================
+
+Having the need of analyzing and isolate parts of the test the regular expressions were very handy.
+wanting to analyze the input under the assumption each line is valid I created regex for each possible
+line with the rules of the Sjava. those expressions are under the enum of SyntaxValidator and using them
+while reading the file for the first time in order to convert it to arraylist structure(with each line
+being followed by its next in the array) allowed me to conclude that the line I store is valid and can be
+later analyzed easier as we know its syntax is valid.
+
+Classed were made to different type of scopes as the hierarchy of the tree is such that the global scope as
+the most common data sherded with all its childrens(by the tree model explained in the design section).
+
+Each scope is represented by a hashmap of token (a variable and all its vital info: name, type, is final,
+is initated) with his name as a key. The global scope also consists of similiar hashmap and also a method
+token hashmap (method token consists of method name, method type (void) and list of its parameters' types
+
+Also exception classes were made for the purpuse of handeling errors with wrong code given(whether it is by
+syntax or by wrong logic) as explained in the exeption machanisem part.
+The exceptions are seperated to two groups - the first one consist of only one class - the exception happens
+if the code line is not valid syntax wise. the other group consist of all the exceptions that might happen
+while trying to parse the code and occurs a code line not fitting simple java code principals - this group
+inherits all from ParsingException class. both groups inherit from CompilerException.
+
+===================
+= Error Handling =
+===================
+
+has Sjava code has many specifications the exception mechanism that was developed had to wide to cover
+different type of errors:
+
+First I wanted to detect if the syntax is valid in each line(as if found a syntax error while reading
+the text I could conclude directly that the there is an error(output "1") for this purpose I created the
+class InvalidLineSyntax
+
+
